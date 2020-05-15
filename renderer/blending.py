@@ -41,6 +41,23 @@ def hard_rgb_blend(colors, fragments) -> torch.Tensor:
     pixel_colors[..., :3] = colors[..., 0, :]
     return pixel_colors
 
+def exp_alpha_blend(colors, fragments, blend_params) -> torch.Tensor:
+    N, H, W, K = fragments.pix_to_face.shape
+    pixel_colors = torch.ones((N, H, W, 4), dtype=colors.dtype, device=colors.device)
+    mask = fragments.pix_to_face >= 0
+
+    # The distance is negative if a pixel is inside a face and positive outside
+    # the face. Therefore use -1.0 *  fragments.dists to get the correct sign.
+    prob = torch.exp(-fragments.dists / blend_params.sigma) * mask
+
+    # The cumulative product ensures that alpha will be 0.0 if at least 1
+    # face fully covers the pixel as for that face, prob will be 1.0.
+    # This results in a multiplication by 0.0 because of the (1.0 - prob)
+    # term. Therefore 1.0 - alpha will be 1.0.
+    alpha = torch.prod((1.0 - prob), dim=-1)
+    pixel_colors[..., :3] = colors[..., 0, :]  # Hard assign for RGB
+    pixel_colors[..., 3] = 1.0 - alpha
+    return pixel_colors
 
 def sigmoid_alpha_blend(colors, fragments, blend_params) -> torch.Tensor:
     """
@@ -83,7 +100,7 @@ def sigmoid_alpha_blend(colors, fragments, blend_params) -> torch.Tensor:
 
 
 def softmax_rgb_blend(
-    colors, fragments, blend_params, znear: float = 1.0, zfar: float = 100
+    colors, fragments, blend_params, znear: float = 1.0, zfar: float = 200
 ) -> torch.Tensor:
     """
     RGB and alpha channel blending to return an RGBA image based on the method
@@ -145,6 +162,102 @@ def softmax_rgb_blend(
     # term. Therefore 1.0 - alpha will be 1.0.
     alpha = torch.prod((1.0 - prob_map), dim=-1)
 
+    # Weights for each face. Adjust the exponential by the max z to prevent
+    # overflow. zbuf shape (N, H, W, K), find max over K.
+    # TODO: there may still be some instability in the exponent calculation.
+    z_inv = (zfar - fragments.zbuf) / (zfar - znear) * mask
+    z_inv_max = torch.max(z_inv, dim=-1).values[..., None]
+    weights_num = prob_map * torch.exp((z_inv - z_inv_max) / blend_params.gamma)
+
+    # Normalize weights.
+    # weights_num shape: (N, H, W, K). Sum over K and divide through by the sum.
+    denom = weights_num.sum(dim=-1)[..., None] + delta
+    weights = weights_num / denom
+
+    # Sum: weights * textures + background color
+    weighted_colors = (weights[..., None] * colors).sum(dim=-2)
+    weighted_background = (delta / denom) * background
+    pixel_colors[..., :3] = weighted_colors + weighted_background
+    pixel_colors[..., 3] = 1.0 - alpha
+
+    return pixel_colors
+
+def exp_rgb_blend(
+    colors, fragments, blend_params, znear: float = 1.0, zfar: float = 100
+) -> torch.Tensor:
+    N, H, W, K = fragments.pix_to_face.shape
+    device = fragments.pix_to_face.device
+    pixel_colors = torch.ones((N, H, W, 4), dtype=colors.dtype, device=colors.device)
+    background = blend_params.background_color
+    if not torch.is_tensor(background):
+        background = torch.tensor(background, dtype=torch.float32, device=device)
+
+    # Background color
+    delta = np.exp(1e-10 / blend_params.gamma) * 1e-10
+    delta = torch.tensor(delta, device=device)
+
+    # Mask for padded pixels.
+    mask = fragments.pix_to_face >= 0
+
+    # Sigmoid probability map based on the distance of the pixel to the face.
+    # fragments.dists[fragments.dists <= 0] = 0.0
+    prob_map = torch.exp(-fragments.dists / blend_params.sigma) * mask
+
+    # The cumulative product ensures that alpha will be 0.0 if at least 1
+    # face fully covers the pixel as for that face, prob will be 1.0.
+    # This results in a multiplication by 0.0 because of the (1.0 - prob)
+    # term. Therefore 1.0 - alpha will be 1.0.
+    alpha = torch.prod((1.0 - prob_map), dim=-1)
+
+    # Weights for each face. Adjust the exponential by the max z to prevent
+    # overflow. zbuf shape (N, H, W, K), find max over K.
+    # TODO: there may still be some instability in the exponent calculation.
+
+    z_inv = (zfar - fragments.zbuf) / (zfar - znear) * mask
+    z_inv_max = torch.max(z_inv, dim=-1).values[..., None]
+    weights_num = prob_map * torch.exp((z_inv - z_inv_max) / blend_params.gamma)
+
+    # Normalize weights.
+    # weights_num shape: (N, H, W, K). Sum over K and divide through by the sum.
+    denom = weights_num.sum(dim=-1)[..., None] + delta
+    weights = weights_num / denom
+
+    # Sum: weights * textures + background color
+    weighted_colors = (weights[..., None] * colors).sum(dim=-2)
+    weighted_background = (delta / denom) * background
+    pixel_colors[..., :3] = weighted_colors + weighted_background
+    pixel_colors[..., 3] = 1.0 - alpha
+
+    return pixel_colors
+
+def linear_rgb_blend(
+    colors, fragments, blend_params, znear: float = 1.0, zfar: float = 100
+) -> torch.Tensor:
+    print('')
+    N, H, W, K = fragments.pix_to_face.shape
+    device = fragments.pix_to_face.device
+    pixel_colors = torch.ones((N, H, W, 4), dtype=colors.dtype, device=colors.device)
+    background = blend_params.background_color
+    if not torch.is_tensor(background):
+        background = torch.tensor(background, dtype=torch.float32, device=device)
+
+    # Background color
+    delta = np.exp(1e-10 / blend_params.gamma) * 1e-10
+    delta = torch.tensor(delta, device=device)
+
+    # Mask for padded pixels.
+    mask = fragments.pix_to_face >= 0
+
+    # Sigmoid probability map based on the distance of the pixel to the face.
+    fragments.dists[fragments.dists <= 0] = 0.0
+    prob_map = (-(fragments.dists) + 1.0) * mask
+    prob_map = prob_map / (torch.max(prob_map) - torch.min(prob_map))
+    prob_map = prob_map - torch.min(prob_map)
+    # The cumulative product ensures that alpha will be 0.0 if at least 1
+    # face fully covers the pixel as for that face, prob will be 1.0.
+    # This results in a multiplication by 0.0 because of the (1.0 - prob)
+    # term. Therefore 1.0 - alpha will be 1.0.
+    alpha = torch.prod((1.0 - prob_map), dim=-1)
     # Weights for each face. Adjust the exponential by the max z to prevent
     # overflow. zbuf shape (N, H, W, K), find max over K.
     # TODO: there may still be some instability in the exponent calculation.

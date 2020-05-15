@@ -42,6 +42,8 @@ def _pad_texture_maps(images: List[torch.Tensor]) -> torch.Tensor:
     for i, image in enumerate(tex_maps):
         if image.shape != max_shape:
             # ToPIL takes and returns a C x H x W tensor
+            if image.is_cuda:
+                image = image.cpu()
             image = resize(image.permute(2, 0, 1)).permute(1, 2, 0)
             tex_maps[i] = image
     tex_maps = torch.stack(tex_maps, dim=0)  # (num_tex_maps, max_H, max_W, 3)

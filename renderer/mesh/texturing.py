@@ -8,7 +8,7 @@ from pytorch3d.structures.textures import Textures
 from .utils import interpolate_face_attributes
 
 
-def interpolate_texture_map(fragments, meshes) -> torch.Tensor:
+def interpolate_texture_map(fragments, meshes, texture_maps=None) -> torch.Tensor:
     """
     Interpolate a 2D texture map using uv vertex texture coordinates for each
     face in the mesh. First interpolate the vertex uvs using barycentric coordinates
@@ -34,14 +34,17 @@ def interpolate_texture_map(fragments, meshes) -> torch.Tensor:
         texels: tensor of shape (N, H, W, K, C) giving the interpolated
         texture for each pixel in the rasterized image.
     """
-    if not isinstance(meshes.textures, Textures):
-        msg = "Expected meshes.textures to be an instance of Textures; got %r"
-        raise ValueError(msg % type(meshes.textures))
+    # HJPark
+    if texture_maps is None:
+        if not isinstance(meshes.textures, Textures):
+            msg = "Expected meshes.textures to be an instance of Textures; got %r"
+            raise ValueError(msg % type(meshes.textures))
+        else:
+            texture_maps = meshes.textures.maps_padded()
 
     faces_uvs = meshes.textures.faces_uvs_packed()
     verts_uvs = meshes.textures.verts_uvs_packed()
     faces_verts_uvs = verts_uvs[faces_uvs]
-    texture_maps = meshes.textures.maps_padded()
 
     # pixel_uvs: (N, H, W, K, 2)
     pixel_uvs = interpolate_face_attributes(
@@ -49,7 +52,12 @@ def interpolate_texture_map(fragments, meshes) -> torch.Tensor:
     )
 
     N, H_out, W_out, K = fragments.pix_to_face.shape
-    N, H_in, W_in, C = texture_maps.shape  # 3 for RGB
+    Nt, H_in, W_in, C = texture_maps.shape  # 3 for RGB
+
+    # HJP
+    if N != Nt:
+        while texture_maps.shape[0] != N:
+            texture_maps = torch.cat([texture_maps, texture_maps])
 
     # pixel_uvs: (N, H, W, K, 2) -> (N, K, H, W, 2) -> (NK, H, W, 2)
     pixel_uvs = pixel_uvs.permute(0, 3, 1, 2, 4).reshape(N * K, H_out, W_out, 2)

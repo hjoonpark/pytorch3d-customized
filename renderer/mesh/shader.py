@@ -9,6 +9,9 @@ from ..blending import (
     hard_rgb_blend,
     sigmoid_alpha_blend,
     softmax_rgb_blend,
+    exp_alpha_blend,
+    linear_rgb_blend,
+    exp_rgb_blend
 )
 from ..cameras import OpenGLPerspectiveCameras
 from ..lighting import PointLights
@@ -99,6 +102,7 @@ class SoftPhongShader(nn.Module):
         cameras = kwargs.get("cameras", self.cameras)
         lights = kwargs.get("lights", self.lights)
         materials = kwargs.get("materials", self.materials)
+        blend_params = kwargs.get("blend_params", self.blend_params)
         colors = phong_shading(
             meshes=meshes,
             fragments=fragments,
@@ -107,7 +111,9 @@ class SoftPhongShader(nn.Module):
             cameras=cameras,
             materials=materials,
         )
-        images = softmax_rgb_blend(colors, fragments, self.blend_params)
+        images = softmax_rgb_blend(colors, fragments, blend_params)
+        # images = exp_rgb_blend(colors, fragments, blend_params)
+        # images = linear_rgb_blend(colors, fragments, blend_params)
         return images
 
 
@@ -225,7 +231,10 @@ class TexturedSoftPhongShader(nn.Module):
         self.blend_params = blend_params if blend_params is not None else BlendParams()
 
     def forward(self, fragments, meshes, **kwargs) -> torch.Tensor:
-        texels = interpolate_texture_map(fragments, meshes)
+        # HJPark
+        texture_maps = kwargs.get('texture_maps', None)
+        texels = interpolate_texture_map(fragments, meshes, texture_maps=texture_maps)
+
         cameras = kwargs.get("cameras", self.cameras)
         lights = kwargs.get("lights", self.lights)
         materials = kwargs.get("materials", self.materials)
@@ -239,6 +248,8 @@ class TexturedSoftPhongShader(nn.Module):
             materials=materials,
         )
         images = softmax_rgb_blend(colors, fragments, blend_params)
+        # images = exp_rgb_blend(colors, fragments, blend_params)
+        # images = linear_rgb_blend(colors, fragments, blend_params)
         return images
 
 
@@ -312,4 +323,5 @@ class SoftSilhouetteShader(nn.Module):
         colors = torch.ones_like(fragments.bary_coords)
         blend_params = kwargs.get("blend_params", self.blend_params)
         images = sigmoid_alpha_blend(colors, fragments, blend_params)
+        # images = exp_alpha_blend(colors, fragments, blend_params)
         return images

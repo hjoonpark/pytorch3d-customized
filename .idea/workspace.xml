@@ -1,13 +1,26 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="8ebec895-a3e2-4e5e-ae52-4aa4a2567cdf" name="Default Changelist" comment="" />
+    <list default="true" id="8ebec895-a3e2-4e5e-ae52-4aa4a2567cdf" name="Default Changelist" comment="">
+      <change afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/renderer/blending.py" beforeDir="false" afterPath="$PROJECT_DIR$/renderer/blending.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/renderer/lighting.py" beforeDir="false" afterPath="$PROJECT_DIR$/renderer/lighting.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/renderer/mesh/shader.py" beforeDir="false" afterPath="$PROJECT_DIR$/renderer/mesh/shader.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/renderer/mesh/texturing.py" beforeDir="false" afterPath="$PROJECT_DIR$/renderer/mesh/texturing.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/structures/textures.py" beforeDir="false" afterPath="$PROJECT_DIR$/structures/textures.py" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
     <option name="LAST_RESOLUTION" value="IGNORE" />
   </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="JupyterTrust" id="3e6e88b3-d10e-47c0-85da-cc52d5bd9cdb" />
   <component name="ProjectId" id="1arswMyVotLNlYiRCLvgQy7ZCCz" />
+  <component name="ProjectLevelVcsManager" settingsEditedManually="true" />
   <component name="ProjectViewState">
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showExcludedFiles" value="true" />
@@ -15,6 +28,7 @@
   </component>
   <component name="PropertiesComponent">
     <property name="RunOnceActivity.ShowReadmeOnStart" value="true" />
+    <property name="SHARE_PROJECT_CONFIGURATION_FILES" value="true" />
     <property name="WebServerToolWindowFactoryState" value="false" />
     <property name="last_opened_file_path" value="$PROJECT_DIR$" />
   </component>
@@ -40,11 +54,24 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1587505284371</updated>
-      <workItem from="1587505285589" duration="2674000" />
+      <workItem from="1587505285589" duration="21929000" />
+      <workItem from="1587790753677" duration="4000" />
+      <workItem from="1587830092213" duration="31879000" />
+      <workItem from="1589437072321" duration="3139000" />
     </task>
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
     <option name="version" value="1" />
+  </component>
+  <component name="WindowStateProjectService">
+    <state x="606" y="134" key="com.intellij.openapi.editor.actions.MultiplePasteAction$ClipboardContentChooser" timestamp="1587781040324">
+      <screen x="0" y="0" width="1920" height="1040" />
+    </state>
+    <state x="606" y="134" key="com.intellij.openapi.editor.actions.MultiplePasteAction$ClipboardContentChooser/0.0.1920.1040@0.0.1920.1040" timestamp="1587781040324" />
+    <state x="623" y="225" width="672" height="678" key="search.everywhere.popup" timestamp="1587833488253">
+      <screen x="0" y="0" width="1920" height="1040" />
+    </state>
+    <state x="623" y="225" width="672" height="678" key="search.everywhere.popup/0.0.1920.1040@0.0.1920.1040" timestamp="1587833488253" />
   </component>
 </project>
